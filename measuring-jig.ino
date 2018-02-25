@@ -5,6 +5,7 @@
 const long STEPS_PER_REVOLUTION = 20;
 const long MICROMETERS_PER_REVOLUTION = 1250;
 
+// Obs! Enbart pin 2 o 3 kan trigga interrupt på Uno
 const int ROTARY_PIN_1 = 2;
 const int ROTARY_PIN_2 = 3;
 const int BUTTON_PIN = 4;
@@ -34,18 +35,25 @@ void setup() {
     // lcd.begin(16, 2);
     // lcd.setBacklight(1);
 
-    // Se till att portarna är inställda som ingångar
+    // Se till att pinnarna är inställda som ingångar
     pinMode(BUTTON_PIN, INPUT);
     pinMode(ROTARY_PIN_1, INPUT);
     pinMode(ROTARY_PIN_2, INPUT);
 
+    // Slå på pin-change-interrupt-1 för port C
+    PCICR |= (1 << PCIE1);
+    // Slå på interrupt for pin 2 och 3 på Port C
+    PCMSK1 |= (1 << PCINT10) | (1 << PCINT11);
+
     measurer.setPosition(0);
 }
 
-void loop() {
-    // Se till att rotary'n läses av så inget steg missas
-    measurer.tick();
+// Se till att rotary'n läses när interrupt triggats, så inget steg missas
+ISR(PCINT1_vect) {
+  measurer.tick();
+}
 
+void loop() {
     // Läs av knapp, om intryckt: nollställ position
     if (digitalRead(BUTTON_PIN) == LOW) {
         prev_pos = -1;
